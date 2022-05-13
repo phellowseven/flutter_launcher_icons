@@ -58,7 +58,6 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
 
   if (argResults[generateAllFlag]) {
     // Create icons
-    print('\n✓ generateAllFlag');
     if (!hasFlavors) {
       stderr.writeln('\n✕ No flavors found (default: $defaultConfigFilePath)');
       exit(2);
