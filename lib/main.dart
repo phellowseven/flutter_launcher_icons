@@ -1,25 +1,25 @@
 import 'dart:io';
-import 'dart:math';
 
 import 'package:args/args.dart';
-import 'package:flutter_launcher_icons/utils.dart';
 import 'package:yaml/yaml.dart';
-import 'package:flutter_launcher_icons/android.dart' as android_launcher_icons;
-import 'package:flutter_launcher_icons/ios.dart' as ios_launcher_icons;
-import 'package:flutter_launcher_icons/constants.dart';
-import 'package:flutter_launcher_icons/custom_exceptions.dart';
+
+import 'android.dart' as android_launcher_icons;
+import 'constants.dart';
+import 'custom_exceptions.dart';
+import 'ios.dart' as ios_launcher_icons;
 
 const String fileOption = 'file';
 const String helpFlag = 'help';
 const String defaultConfigFile = 'flutter_launcher_icons.yaml';
 const String flavorConfigFilePattern = '\./flutter_launcher_icons-(.*).yaml';
-String flavorConfigFile(String flavor) => 'flutter_launcher_icons-$flavor.yaml';
+String flavorConfigFile(String flavor) =>
+    'assets/flutter_launcher_icons/flutter_launcher_icons-$flavor.yaml';
 
 List<String> getFlavors() {
-  List<String> flavors = [];
+  final List<String> flavors = [];
   for (var item in Directory('.').listSync()) {
     if (item is File) {
-      var match = RegExp(flavorConfigFilePattern).firstMatch(item.path);
+      final match = RegExp(flavorConfigFilePattern).firstMatch(item.path);
       if (match != null) {
         flavors.add(match.group(1));
       }
@@ -43,7 +43,7 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
   }
 
   // Flavors manangement
-  var flavors = getFlavors();
+  final flavors = getFlavors();
   var hasFlavors = flavors.isNotEmpty;
 
   // Load the config file
@@ -51,7 +51,7 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
       loadConfigFileFromArgResults(argResults, verbose: true);
 
   // Create icons
-  if ( !hasFlavors ) {
+  if (!hasFlavors) {
     try {
       createIconsFromConfig(yamlConfig);
     } catch (e) {
@@ -64,7 +64,8 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
     try {
       for (String flavor in flavors) {
         print('\nFlavor: $flavor');
-        final Map<String, dynamic> yamlConfig = loadConfigFile(flavorConfigFile(flavor), flavorConfigFile(flavor));
+        final Map<String, dynamic> yamlConfig =
+            loadConfigFile(flavorConfigFile(flavor), flavorConfigFile(flavor));
         await createIconsFromConfig(yamlConfig, flavor);
       }
     } catch (e) {
@@ -76,7 +77,8 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
   }
 }
 
-Future<void> createIconsFromConfig(Map<String, dynamic> config, [String flavor]) async {
+Future<void> createIconsFromConfig(Map<String, dynamic> config,
+    [String flavor]) async {
   if (!isImagePathInConfig(config)) {
     throw const InvalidConfigException(errorMissingImagePath);
   }
@@ -101,7 +103,6 @@ Future<void> createIconsFromConfig(Map<String, dynamic> config, [String flavor])
   }
   if (isNeedingNewIOSIcon(config)) {
     ios_launcher_icons.createIcons(config, flavor);
-
   }
 }
 
