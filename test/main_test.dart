@@ -33,7 +33,7 @@ void main() {
   group('config file from args', () {
     // Create mini parser with only the wanted option, mocking the real one
     final ArgParser parser = ArgParser()
-      ..addOption(main_dart.fileOption, abbr: 'f');
+      ..addOption(main_dart.flavorOption, abbr: 'f');
     final String testDir =
         join('.dart_tool', 'flutter_launcher_icons', 'test', 'config_file');
 

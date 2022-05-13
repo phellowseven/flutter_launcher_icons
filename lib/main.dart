@@ -3,20 +3,24 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:path/path.dart' as path;
 import 'package:yaml/yaml.dart';
-import 'package:flutter_launcher_icons/android.dart' as android_launcher_icons;
-import 'package:flutter_launcher_icons/ios.dart' as ios_launcher_icons;
-import 'package:flutter_launcher_icons/constants.dart';
-import 'package:flutter_launcher_icons/custom_exceptions.dart';
 
-const String fileOption = 'file';
+import 'android.dart' as android_launcher_icons;
+import 'constants.dart';
+import 'custom_exceptions.dart';
+import 'ios.dart' as ios_launcher_icons;
+
 const String helpFlag = 'help';
-const String defaultConfigFile = 'flutter_launcher_icons.yaml';
+const String defaultConfigFilePath = 'assets/flutter_launcher_icons/';
+const String flavorOption = 'flavor';
+const String generateAllFlag = 'all';
+const String defaultConfigFile =
+    defaultConfigFilePath + 'flutter_launcher_icons.yaml';
 const String flavorConfigFilePattern = r'^flutter_launcher_icons-(.*).yaml$';
 String flavorConfigFile(String flavor) => 'flutter_launcher_icons-$flavor.yaml';
 
 List<String> getFlavors() {
   final List<String> flavors = [];
-  for (var item in Directory('.').listSync()) {
+  for (var item in Directory(defaultConfigFilePath).listSync()) {
     if (item is File) {
       final name = path.basename(item.path);
       final match = RegExp(flavorConfigFilePattern).firstMatch(name);
@@ -32,12 +36,18 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
   final ArgParser parser = ArgParser(allowTrailingOptions: true);
   parser.addFlag(helpFlag, abbr: 'h', help: 'Usage help', negatable: false);
   // Make default null to differentiate when it is explicitly set
-  parser.addOption(fileOption,
-      abbr: 'f', help: 'Config file (default: $defaultConfigFile)');
+  parser.addOption(
+    flavorOption,
+    abbr: 'f',
+    help: 'Configure flavor name (flutter_launcher_icons-<flavor name>)',
+  );
+  parser.addFlag(generateAllFlag,
+      abbr: 'a',
+      help: 'Generate all flavors in folder (default: $defaultConfigFilePath)',
+      negatable: false);
   final ArgResults argResults = parser.parse(arguments);
 
   if (argResults[helpFlag]) {
-    stdout.writeln('Generates icons for iOS and Android');
     stdout.writeln(parser.usage);
     exit(0);
   }
@@ -46,39 +56,68 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
   final flavors = getFlavors();
   final hasFlavors = flavors.isNotEmpty;
 
-  // Load the config file
-  final Map<String, dynamic>? yamlConfig =
-      loadConfigFileFromArgResults(argResults, verbose: true);
-
-  if (yamlConfig == null) {
-    throw const NoConfigFoundException();
-  }
-
-  // Create icons
-  if (!hasFlavors) {
-    try {
-      createIconsFromConfig(yamlConfig);
-      print('\n✓ Successfully generated launcher icons');
-    } catch (e) {
-      stderr.writeln('\n✕ Could not generate launcher icons');
-      stderr.writeln(e);
+  if (argResults[generateAllFlag]) {
+    // Create icons
+    print('\n✓ generateAllFlag');
+    if (!hasFlavors) {
+      stderr.writeln('\n✕ No flavors found (default: $defaultConfigFilePath)');
       exit(2);
+    } else {
+      try {
+        for (String flavor in flavors) {
+          print('\nFlavor: $flavor');
+          generateFlavor(flavor);
+        }
+        print('\n✓ Successfully generated launcher icons for flavors');
+      } catch (e) {
+        stderr.writeln('\n✕ Could not generate launcher icons for flavors');
+        stderr.writeln(e);
+        exit(2);
+      }
     }
   } else {
-    try {
-      for (String flavor in flavors) {
-        print('\nFlavor: $flavor');
-        final Map<String, dynamic> yamlConfig =
-            loadConfigFile(flavorConfigFile(flavor), flavorConfigFile(flavor));
-        await createIconsFromConfig(yamlConfig, flavor);
+    final String? specificFlavor = argResults[flavorOption];
+
+    if (specificFlavor != null) {
+      if (specificFlavor == flavorOption) {
+        stderr.writeln('\n✕ Specify a flavor to be generated');
+        exit(2);
+      } else {
+        try {
+          bool flavorExists = false;
+          for (String flavor in flavors) {
+            if (flavor == specificFlavor) {
+              flavorExists = true;
+            }
+          }
+          if (flavorExists) {
+            generateFlavor(specificFlavor);
+            print(
+                '\n✓ Successfully generated launcher icons for flavor: $specificFlavor');
+          } else {
+            stderr.writeln(
+                '\n✕ Could not find flavor ${flavorConfigFile(specificFlavor)} in $defaultConfigFilePath');
+            exit(2);
+          }
+        } catch (e) {
+          stderr.writeln(
+              '\n✕ Could not generate launcher icons for flavor $specificFlavor');
+          stderr.writeln(e);
+          exit(2);
+        }
       }
-      print('\n✓ Successfully generated launcher icons for flavors');
-    } catch (e) {
-      stderr.writeln('\n✕ Could not generate launcher icons for flavors');
-      stderr.writeln(e);
-      exit(2);
+    } else {
+      stdout.writeln(parser.usage);
+      exit(0);
     }
   }
+}
+
+Future<void> generateFlavor(String flavor) async {
+  final Map<String, dynamic> yamlConfig = loadConfigFile(
+      defaultConfigFilePath + flavorConfigFile(flavor),
+      flavorConfigFile(flavor));
+  await createIconsFromConfig(yamlConfig, flavor);
 }
 
 Future<void> createIconsFromConfig(Map<String, dynamic> config,
@@ -112,13 +151,12 @@ Future<void> createIconsFromConfig(Map<String, dynamic> config,
 
 Map<String, dynamic>? loadConfigFileFromArgResults(ArgResults argResults,
     {bool verbose = false}) {
-  final String? configFile = argResults[fileOption];
-  final String? fileOptionResult = argResults[fileOption];
+  final String? configFile = argResults[flavorOption];
 
   // if icon is given, try to load icon
   if (configFile != null && configFile != defaultConfigFile) {
     try {
-      return loadConfigFile(configFile, fileOptionResult);
+      return loadConfigFile(configFile, configFile);
     } catch (e) {
       if (verbose) {
         stderr.writeln(e);
@@ -131,12 +169,12 @@ Map<String, dynamic>? loadConfigFileFromArgResults(ArgResults argResults,
   // If none set try flutter_launcher_icons.yaml first then pubspec.yaml
   // for compatibility
   try {
-    return loadConfigFile(defaultConfigFile, fileOptionResult);
+    return loadConfigFile(defaultConfigFile, configFile);
   } catch (e) {
     // Try pubspec.yaml for compatibility
     if (configFile == null) {
       try {
-        return loadConfigFile('pubspec.yaml', fileOptionResult);
+        return loadConfigFile('pubspec.yaml', configFile);
       } catch (_) {}
     }
 

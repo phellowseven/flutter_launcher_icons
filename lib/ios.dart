@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_launcher_icons/utils.dart';
+
 import 'package:image/image.dart';
-import 'package:flutter_launcher_icons/constants.dart';
+
+import 'constants.dart';
+import 'utils.dart';
 
 /// File to handle the creation of icons for iOS platform
 class IosIconTemplate {
@@ -42,7 +44,8 @@ void createIcons(Map<String, dynamic> config, String? flavor) {
     image.channels = Channels.rgb;
   }
   if (image.channels == Channels.rgba) {
-    print('\nWARNING: Icons with alpha channel are not allowed in the Apple App Store.\nSet "remove_alpha_ios: true" to remove it.\n');
+    print(
+        '\nWARNING: Icons with alpha channel are not allowed in the Apple App Store.\nSet "remove_alpha_ios: true" to remove it.\n');
   }
   String iconName;
   final dynamic iosConfig = config['ios'];
