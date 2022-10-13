@@ -10,13 +10,13 @@ import 'custom_exceptions.dart';
 import 'ios.dart' as ios_launcher_icons;
 
 const String helpFlag = 'help';
-const String defaultConfigFilePath = 'assets/flutter_launcher_icons/';
+const String defaultConfigFilePath = 'scripts/flavored_pubspec/flavor/';
 const String flavorOption = 'flavor';
 const String generateAllFlag = 'all';
 const String defaultConfigFile =
     defaultConfigFilePath + 'flutter_launcher_icons.yaml';
-const String flavorConfigFilePattern = r'^flutter_launcher_icons-(.*).yaml$';
-String flavorConfigFile(String flavor) => 'flutter_launcher_icons-$flavor.yaml';
+const String flavorConfigFilePattern = r'^(.*).yaml$';
+String flavorConfigFile(String flavor) => '$flavor.yaml';
 
 List<String> getFlavors() {
   final List<String> flavors = [];
@@ -39,7 +39,7 @@ Future<void> createIconsFromArguments(List<String> arguments) async {
   parser.addOption(
     flavorOption,
     abbr: 'f',
-    help: 'Configure flavor name (flutter_launcher_icons-<flavor name>)',
+    help: 'Configure flavor name (<flavor name>)',
   );
   parser.addFlag(generateAllFlag,
       abbr: 'a',
