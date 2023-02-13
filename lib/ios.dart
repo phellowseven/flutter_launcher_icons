@@ -41,9 +41,9 @@ void createIcons(Map<String, dynamic> config, String? flavor) {
     return;
   }
   if (config['remove_alpha_ios'] is bool && config['remove_alpha_ios']) {
-    image.channels = Channels.rgb;
+    image.getBytes(order: ChannelOrder.rgb);
   }
-  if (image.channels == Channels.rgba) {
+  if (image.numChannels == channelOrderLength[ChannelOrder.rgba]) {
     print(
         '\nWARNING: Icons with alpha channel are not allowed in the Apple App Store.\nSet "remove_alpha_ios: true" to remove it.\n');
   }
